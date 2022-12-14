@@ -85,11 +85,11 @@ for index in index_array_2:
     ### TRANS FILE
     trans                  = os.path.join(trans_path, 'Subject{}-trans.fif'.format(index))
     
-    verts                  = conpy.select_vertices_in_sensor_range( src, 
+    verts                  = conpy.select_vertices_in_sensor_range(src, 
                                                                    dist=0.07, 
                                                                    info=raw_index.info, 
                                                                    trans = trans) 
-    src_sub                = conpy.restrict_src_to_vertices( src, verts)
+    src_sub                = conpy.restrict_src_to_vertices(       src, verts)
 
     os.chdir(folder_with_files) 
     bem = mne.read_bem_solution('Sub{}-dec-ind-bem-sol.fif'.format(index))
@@ -112,11 +112,11 @@ os.chdir(folder_with_files)
 src_surf_fs            = mne.read_source_spaces('Sub_avg-oct6-src.fif')
 
 trans                  = os.path.join(trans_path, 'fsaverage-trans.fif')
-verts                  = conpy.select_vertices_in_sensor_range( src, 
+verts                  = conpy.select_vertices_in_sensor_range(src_surf_fs, 
                                                                dist=0.07, 
                                                                info=raw_index.info, 
                                                                trans = trans) 
-src_sub                = conpy.restrict_src_to_vertices( src, verts)
+src_sub                = conpy.restrict_src_to_vertices( src_surf_fs, verts)
 
 os.chdir(folder_with_files)   
 model                  = mne.make_bem_model(subject='fsaverage', ico=5,  #ICO 5 → 10240 downsampling
@@ -140,15 +140,15 @@ mne.write_forward_solution('Sub_ave-fwd.fif'.format(index), fwd, overwrite=True)
 # %% PREPARATION TO CONNECTIVITY
 
 #### UPLOADER
-fwd_ind                =  [1,2,3,4,5,6,7,8,9,0,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29]
-src_surf               =  [1,2,3,4,5,6,7,8,9,0,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29]
-
+fwd_ind                =  [1,2,3,4,5,6,7,8,9,0,10]#,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29]
+src_surf               =  [1,2,3,4,5,6,7,8,9,0,10]#,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29]
+sub_list               =  [1,2,3,4,5,6,7,8,9,0,10]#,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29]
 os.chdir(folder_with_files)   
 src_surf_fs            = mne.read_source_spaces('Sub_avg-oct6-src.fif')
 fwd_ave                = mne.read_forward_solution('Sub_ave-fwd.fif') 
 
 index = 3
-for index in index_array_2:  
+for index in index_array_2[:4]:  
     os.chdir(folder_with_files)   
     fwd_ind[index]     = mne.read_forward_solution('Sub{}-MOR-fwd.fif'.format(index)) 
     fwd_ind[index]     = conpy.forward_to_tangential( fwd_ind[index] )
@@ -157,23 +157,24 @@ for index in index_array_2:
 
 ### LIST OF SUBJECT   
 index                  = 3
-for index in index_array_2[:]:    
+for index in index_array_2[:4]:    
     Subject            = 'Sub{}'.format(index)
     sub_list[index]    = Subject
     
 
 ### FINDING THE SHARED VERTICES
-fwd_ind                = np.delete(fwd_ind, [0,1,2,4,5, 8,10,12,13,15,16,17,22,24,29])
-src_surf               = np.delete(src_surf, [0,1,2,4,5, 8,10,12,13,15,16,17,22,24,29])
+fwd_ind                = np.delete(fwd_ind, [0,1,2,4,5, 8,10])#,12,13,15,16,17,22,24,29])
+src_surf               = np.delete(src_surf,[0,1,2,4,5, 8,10])#,12,13,15,16,17,22,24,29])
 
 max_sensor_dist        = 0.07
 fwd_ind[1]             = conpy.restrict_forward_to_sensor_range(fwd_ind[1], max_sensor_dist)
 
+vert_inds              = conpy.select_shared_vertices(fwd_ind, fwd_ave['src'], data_path)
 vert_inds              = conpy.select_shared_vertices(fwd_ind, fwd_ave, data_path)
 
 for fwd, vert_ind, index in zip(fwd_ind, vert_inds, index_array_2):
     fwd_r = conpy.restrict_forward_to_vertices(fwd, vert_ind)
-    os.chdir('L:/{}/'.format(folder))
+    os.chdir(folder_with_files)   
     mne.write_forward_solution('Sub{}-oct6-commonvertices-surf-fwd.fif', fwd_r,
                                overwrite=True)
     
